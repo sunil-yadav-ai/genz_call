@@ -1,0 +1,27 @@
+.landingPageContainer {
+  width: 100vw;
+  height: 100vh;
+  background-image: url("/Gemini_Generated_Image_348rwi348rwi348r.png");
+  background-repeat: no-repeat;
+  background-size: cover;
+  
+  color: white;
+}
+.landingPageContainer nav {
+  padding-inline: 1.2rem ;
+  padding-block: 1.6rem;
+  display: flex;
+  justify-content: space-between;
+
+}
+.landingPageContainer nav h2{
+  font-size: 1.8rem;
+  font-weight: 500;
+}
+
+.landingPageContainer nav .navlist{
+  display: flex;
+  gap: 1.6rem;
+  cursor: pointer;
+
+}
