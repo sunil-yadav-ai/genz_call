@@ -25,3 +25,54 @@
   cursor: pointer;
 
 }
+.landingMainContainer {
+  display: flex;
+  justify-content: space-between;
+  padding-inline: 3rem;
+  align-items: center;
+
+  height: 80vh;
+
+
+}
+.landingMainContainer >div:nth-child(1){
+  font-size: 1.5rem;
+ 
+}
+
+/* .landingMainContainer >div:nth-child(2) img{
+  height: 20vh;
+  width: auto;
+  
+} */
+
+.image_call{
+  height: 60vh;
+  transform: rotate(-13deg);
+  z-index: 2;
+}
+
+.image_call1{
+  height: 55vh;
+  transform: rotate(13deg);
+  z-index: 0;
+ 
+}
+
+.link_button{
+  background-color: #b26308;
+  width: fit-content;
+  padding: 0.5rem;
+  text-decoration: none;
+  color: white;
+  font-size: 1.7rem;
+  border-radius: 0.8rem;
+  
+  
+}
+.linkContainer{
+  margin-top: 2rem;
+
+}
+
+
