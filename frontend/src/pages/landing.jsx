@@ -20,7 +20,7 @@ export default function LandingPage(){
                 <div> <h1><span style={{ color: " #b26308" }}> Connect</span> with your loved Ones </h1>
                 <p>Cover a distance by GenZ Video Call</p>
                 <div className='linkContainer' role='button'>
-                    <Link className='link_button' to={"/home"}>Get Stated</Link>
+                    <Link className='link_button' to={"/auth"}>Get Stated</Link>
                 </div>
                 </div>
                 
