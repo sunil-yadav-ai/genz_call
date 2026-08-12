@@ -2,6 +2,8 @@ import React, { useEffect, useRef, useState } from "react";
 import Button from "@mui/material/Button";
 import TextField from "@mui/material/TextField";
 import "../style/videoMeet.css";
+import { io } from "socket.io-client";
+
 
 const server_url = "http://localhost:8000";
 
@@ -171,11 +173,103 @@ export default function VideoMeet() {
     // CONNECT BUTTON
     // ------------------------------------
 
+    // Todo
+
+    let gotMessageFromServer = (fromId,message) =>{
+
+    }
+
+    //todo addmessage
+    let addMessage =()=>{
+
+    }
+
+
     const connect = () => {
-        if (username.trim() === "") {
-            alert("Please enter username");
-            return;
-        }
+        socketRef.current = io.connect(server_url,{ secure: false})
+
+        socketRef.current.on('signal',gotMessageFromServer);
+        socketRef.current.on("connect",()=>{
+
+            socketRef.current.emit("join-call",window.location.href)
+
+            socketIdRef.current = socketRef.current.id
+            socketRef.current.on("chat-message",addmessage)
+
+            socketRef.current.on("user-left",(id)=>{
+                setVideo((videos)=>videos.filter((video)=>video.sockerId !== id ))
+            })
+
+            socketRef.current.on("user-joined",(id,clients) => {
+                clients.forEach((socketListId)=>{
+
+                    connections[socketListId] = new RTCPeerConnection(peerConfigConnections)
+                    
+                    connections[socketListId].onicecandidate = (event) =>{
+                        if(event.candidate !== null){
+                            socketRef.current.emit("signal",socketListId,JSON.stringify({'ice':event.candidate}))
+                        }
+                    }
+                    connections[socketListId].onaddstrem = (event) =>{
+
+                        let videoExists = videoRef.current.find(video => video.socketId === socketListId);
+
+                        if(videoExists){
+                            setVideo(videos =>{
+                                const updateVideos = video.map(video =>{
+                                    video.socketId === socketListId ? { ...video, steam:event.steam}:video
+                                })
+                                videoRef.current = updateVideos;
+                                return updateVideos
+                            })
+                        }else{
+
+                            let newVideo = {
+                                socketId: socketListId,
+                                stream:event.stream,
+                                autoPlay:true,
+                                playsinline:true
+                            }
+
+                            setVideos(videos =>{
+                                const updatedVideos = [...videos,newVideo];
+                                videoRef.current = updateVideos;
+                                return updateVideos;
+                            });
+
+                        }
+
+
+                    };
+
+                    if(window.localStream !== undefined && window.localStream !== null){
+                        connections[socketListId].addStrem(window.localStream);
+
+                    }else{
+                        // todo blackSlience
+                        let blackSlience
+    }
+
+                })
+                if(id === socketIdRef.current){
+                    for(let id2 in connections){
+                        if(id2 === socketIdRef.current) continue
+                        try{
+                            connections[id2].addStream(window.localStream)
+                        }catch(e){
+
+                        }
+                        connections[id2].createOffer().then((description)=>{
+                            connections[id2].setLocalDescription(description)
+                            .then(()=>{
+                                socketRef.current.emit("signal",id2,JSON.stringify({"sdp":connections[id2].localDescription}))
+                            })
+                            .catch(e => console.log(e))
+                        }) 
+                    }
+                }
+            })
+        })
 
         setAskForUsername(false);
 
@@ -183,6 +277,7 @@ export default function VideoMeet() {
         // connectToSocketServer();
     };
 
+    
     // ------------------------------------
     // ENABLE VIDEO + AUDIO
     // ------------------------------------
