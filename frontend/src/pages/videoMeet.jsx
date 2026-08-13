@@ -115,6 +115,69 @@ export default function VideoMeet() {
         }
     };
 
+
+
+    let getUserMediaSuccess = (stream) =>{
+        try{
+            window.localStream.getTracks().forEach(track => track.stop())
+        }catch(e){
+            console.log(e);
+        }
+
+        window.localStream = stream;
+        localVideoRef.current.srtObject = stream;
+
+        for (let id in connections){
+            if(id === socketIdRef.current) continue;
+
+            connections[id].addStream(window.localStream)
+
+            connections[id].createOffer().then((description)=>{
+                connections[id].setLocalDescription(description)
+                .then(()=>{
+                    socketIdRef.current.emit("signal",id,JSON.stringify({ "sdp":connections[id].localDescription}))
+                })
+                .catch(e => console.log(e))
+            })
+        }
+        stream.getTracks().forEach(track.onended = ()=>{
+            setVideo(false)
+            setAudio(false);
+
+            try{
+                let tracks = localVideoRef.current.srcObject.getTracks()
+                tracks.forEach(tracks => track.stop())
+            }catch(e) {console.log(e)}
+
+
+            for(let id in connections){
+                connections[id].addStream(window.localStream)
+                connections[id].createOffer().then((description)
+            .then(()=>{
+                socketRef.current.emit("signal", id, JSON.stringify({"sdp":connections[id].localDescription}))
+            }).catch(e => console.log(e)));
+            }
+        })
+    }
+
+    let silence = () =>{
+        let ctx = new AudioContext()
+        let oscillator = ctx.createOscillator();
+
+        let dst = oscillator.connect(ctx.createMediaStreamDestination());
+
+        oscillator.start();
+        ctx.resume()
+        return Object.assign(dst.stream.getAudioTracks()[0],{enabled:false})
+    }
+
+    let black = ({width =640,height=480 } = {}) =>{
+        let canvas = Object.assign(document.createElement("canvas"),{widht,height});
+
+        canvas.getContext('2d').fillRect(0,0,widht,height);
+
+    }
+
     // ------------------------------------
     // GET USER MEDIA
     // ------------------------------------
@@ -176,6 +239,24 @@ export default function VideoMeet() {
     // Todo
 
     let gotMessageFromServer = (fromId,message) =>{
+        var singal = JSON.parse(message)
+
+        if(fromId !== socketIdRef.current){
+            if(singal.sdo){
+                connections[fromId].setREmoteDescription(new RTCSessionDescription(singal.sdp)).then(()=>{
+                    if(singal.sdp.type === "offer"){
+                        connrctions[fromId].createAnswer().then((description)=>{
+                            connections[fromId].setLocalDescription(description).then(()=>{
+                                socketIdRef.current.emit("signal",fromId, JSON.stringify({"sdp":connections[fromId].localDescription}))
+                            }).catch(e=> console.log(e))
+                        }).catch(e=>console.log(e))
+                    }
+                }).catch(e=>console.log(e))
+            }
+            if(singal.ice){
+                connections[fromId].addIceCandidate(new RTCIceCandidate(singal.ice)).catch(e=>console.log(e));
+            }
+        }
 
     }
 
