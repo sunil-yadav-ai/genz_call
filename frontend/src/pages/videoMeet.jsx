@@ -742,8 +742,10 @@ import ScreenShareIcon from "@mui/icons-material/ScreenShare";
 import StopScreenShareIcon from "@mui/icons-material/StopScreenShare";
 import Badge from "@mui/material/Badge";
 import ChatIcon from "@mui/icons-material/Chat";
-
-
+import CloseIcon from "@mui/icons-material/Close";
+import InputAdornment from "@mui/material/InputAdornment";
+import SendIcon from "@mui/icons-material/Send";
+import SendRoundedIcon from "@mui/icons-material/SendRounded";
 
 import { io } from "socket.io-client";
 
@@ -799,6 +801,7 @@ export default function VideoMeet() {
     const [screen, setScreen] = useState(false);
 
     const [newMessage,setNewMessage] = useState(3);
+    const [showModel , setShowModel] = useState(true);
 
 
 
@@ -1648,6 +1651,19 @@ export default function VideoMeet() {
     };
 
 
+    //handle chat here
+    let handleChat = ()=>{
+        setShowModel(prev => !prev);
+        
+
+    }
+
+
+    //send message
+    let sendMessage = ()=>{
+
+    }
+
     // =========================
     // CLEANUP
     // =========================
@@ -1752,6 +1768,87 @@ export default function VideoMeet() {
 
                 <div className="meetVideoContainer">
 
+                    {/* {
+                        showModel ? 
+                        <div className="chatRoom">
+                            
+                            <div className="chatContainer">
+                                <h1>Chat</h1>
+                                <div className="chattingArea">
+                                    <TextField
+                                    label="Chat with your loved Ones..."
+                                    variant="outlined"
+                                    />
+                                    <Button variant="contained" endIcon={<SendIcon />} onClick={sendMessage}>Send</Button>
+                                </div>
+                                
+
+                            </div>
+
+                        </div> : 
+                        null
+                    } */}
+
+                    {
+                        showModel ? 
+                            <div>
+                                <div className="chatRoom">
+                                    <div className="chatContainer">
+
+                                        {/* Header */}
+                                        <div className="chatHeader">
+                                            <h2>Chat</h2>
+                                        </div>
+
+                                            {/* Messages */}
+                                        <div className="messagesArea">
+                                            {/* Messages yahan render honge */}
+                                        </div>
+
+                                        {/* Input */}
+                                        <div className="chattingArea">
+                                            <div className="chattingArea">
+                                                <TextField
+                                                    fullWidth
+                                                    size="small"
+                                                    placeholder="Type a message..."
+                                                    variant="outlined"
+                                                    
+                                                    slotProps={{
+                                                        input: {
+                                                        endAdornment: (
+                                                            <InputAdornment position="end">
+                                                             
+                                                            <IconButton
+                                                                onClick={sendMessage}
+                                                                sx={{
+                                                                color: "#0095F6",
+                                                                padding: "6px",
+                                                                }}
+                                                            >
+                                                                <SendRoundedIcon />
+                                                            </IconButton>
+                                                            
+                                                            </InputAdornment>
+                                                        ),
+                                                        },
+                                                    }}
+                                                    
+                                                />
+                                            </div>
+
+                                            
+                                        </div>
+
+                                    </div>
+                                </div>
+                            </div>
+                            :
+                            null
+                    }
+
+                    
+
                     
 
 
@@ -1854,8 +1951,15 @@ export default function VideoMeet() {
 
 
                         <Badge badgeContent={newMessage} max={999} color="secondary" >
-                            <IconButton style={{color:"white"}}>
-                                <ChatIcon/>
+                            <IconButton style={{color:"white"} } onClick={handleChat}>
+                                {
+                                    showModel ?
+                                    <ChatIcon /> :
+                                    <CloseIcon/>
+
+
+                                }
+                                
 
                             </IconButton>
                             
