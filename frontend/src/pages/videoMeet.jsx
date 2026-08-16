@@ -1430,6 +1430,7 @@ export default function VideoMeet() {
                 await navigator.mediaDevices
                     .getDisplayMedia({
                         video: true,
+                        audio:true
                     });
 
             const screenTrack =
