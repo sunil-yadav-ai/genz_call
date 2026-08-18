@@ -3,6 +3,7 @@ import { AuthProvider } from './controls/authContext';
 import Authentication from './pages/authentication';
 import VideoMeet from './pages/videoMeet';
 import LandingPage from './pages/landing';
+import History from './pages/history';
 import { BrowserRouter as Router,Route,Routes} from 'react-router-dom';
 function App() {
   
@@ -13,6 +14,7 @@ function App() {
       <AuthProvider>
       <Routes>
         <Route path='/' element={<LandingPage/> }/>
+        <Route path='history' element={<History/>}/>
         <Route path='/auth' element={<Authentication/>} />
         <Route path='/:url' element={<VideoMeet/>}/>
       

@@ -89,6 +89,11 @@
     z-index: 100;
 }
 
+.chattingDisplay{
+
+
+}
+
 .chatContainer {
     height: 100%;
     display: flex;
@@ -131,6 +136,9 @@
 /* Input area */
 
 .chattingArea {
+    position: absolute;
+    bottom: 0px;
+    width: 100%;
     padding: 12px;
     background: white;
     border-top: 1px solid #ddd;
