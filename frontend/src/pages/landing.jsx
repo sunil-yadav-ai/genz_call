@@ -1,17 +1,25 @@
 import React from 'react'
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import "../App.css";
 
 export default function LandingPage(){
+
+    const router = useNavigate()
     return (
         <div className='landingPageContainer'>
             <nav>
                 <div className='navHeader'><h2>GenZ Video Call</h2></div>
                 <div className='navlist'>
-                    <p>Join as Guest</p>
-                    <p>Register</p>
-                    <div role='button'>
-                        <p>Login</p>
+                    <p onClick={()=>{
+                        router("/guest")
+                    }}>Join as Guest</p>
+                    <p onClick={()=>{
+                        router("/auth")
+                    }}>Register</p>
+                    <div  role='button' >
+                        <p onClick={()=>{
+                            router("/auth")
+                        }}>Login</p>
                     </div>
                 </div>
             </nav>

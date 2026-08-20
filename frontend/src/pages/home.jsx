@@ -50,11 +50,16 @@ export default function HomeComponent() {
                     Join
                 </button>
 
-                <IconButton>
+                <IconButton onClick={
+                    ()=>{
+                        navigate("/history")
+                    }
+                }>
                     <RestoreIcon />
+                    <p>History</p>
                     
                 </IconButton>
-                <p>History</p>
+                
                 <Button onClick={()=>{
                     localStorage.removeItem("token")
                     navigate("/auth")
