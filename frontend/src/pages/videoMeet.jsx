@@ -18,10 +18,10 @@ import CloseIcon from "@mui/icons-material/Close";
 import SendRoundedIcon from "@mui/icons-material/SendRounded";
 
 import { io } from "socket.io-client";
-
+import server from '../enverment'
 import "../style/videoComponent.css";
 
-const server_url = "http://localhost:8000";
+const server_url = server;
 
 const peerConfigConnections = {
     iceServers: [
