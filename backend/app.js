@@ -5,9 +5,8 @@ dns.setServers([
     "1.1.1.1"
 ]);
 
-
-
 require("dotenv").config();
+
 const express = require("express");
 const { createServer } = require("node:http");
 const mongoose = require("mongoose");
@@ -16,7 +15,6 @@ const cors = require("cors");
 const userRoutes = require("./src/routes/userRoutes.js");
 const { connectToSocket } = require("./src/controllers/socketManager.js");
 
-
 const app = express();
 const server = createServer(app);
 
@@ -24,10 +22,30 @@ const server = createServer(app);
 // CORS
 // ==========================================
 
+const allowedOrigins = [
+    "http://localhost:5173",
+
+    // Apne actual frontend Render URL ko yahan daalo
+    "https://genz-call-3.onrender.com"
+];
+
 const corsOptions = {
-    origin: "http://localhost:5173",
+    origin: function (origin, callback) {
+
+        // Postman / server-to-server requests
+        if (!origin) {
+            return callback(null, true);
+        }
+
+        if (allowedOrigins.includes(origin)) {
+            return callback(null, true);
+        }
+
+        return callback(new Error("Not allowed by CORS"));
+    },
+
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    credentials: true,
+    credentials: true
 };
 
 app.use(cors(corsOptions));
@@ -41,7 +59,7 @@ app.use(express.json({ limit: "40kb" }));
 app.use(
     express.urlencoded({
         limit: "40kb",
-        extended: true,
+        extended: true
     })
 );
 
@@ -50,10 +68,8 @@ app.use(
 // ==========================================
 
 const io = connectToSocket(server, {
-    cors: corsOptions,
+    cors: corsOptions
 });
-
-
 
 // ==========================================
 // ROUTES
@@ -73,20 +89,16 @@ app.set("port", process.env.PORT || 8000);
 
 const start = async () => {
     try {
-        console.log("MONGO_URI:", process.env.MONGO_URI);
-        await mongoose.connect(
-            process.env.MONGO_URI
-        );
+        console.log("Connecting to MongoDB...");
+
+        await mongoose.connect(process.env.MONGO_URI);
 
         console.log("✅ Database is connected");
 
-        server.listen(app.get("port"), () => {
-            console.log(
-                `🚀 App is listening on port ${app.get("port")}`
-            );
-            console.log(
-                `🌐 Server: http://localhost:${app.get("port")}`
-            );
+        const port = app.get("port");
+
+        server.listen(port, "0.0.0.0", () => {
+            console.log(`🚀 App is listening on port ${port}`);
         });
 
     } catch (error) {
