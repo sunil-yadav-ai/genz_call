@@ -63,36 +63,26 @@ export const AuthProvider = ({ children }) => {
                 }
             );
 
-            if (
-                request.status ===
-                httpStatus.CREATED
-            ) {
+            if (request.status === 200 || request.status === 201) {
+    const user =
+        request.data?.user ||
+        request.data?.data ||
+        {
+            name,
+            username,
+        };
 
-                /*
-                 * If backend sends user data
-                 */
-                const user =
-                    request.data?.user ||
-                    request.data?.data ||
-                    {
-                        name,
-                        username,
-                    };
+    setUserData(user);
 
-                setUserData(user);
+    localStorage.setItem(
+        "userData",
+        JSON.stringify(user)
+    );
 
-                localStorage.setItem(
-                    "userData",
-                    JSON.stringify(user)
-                );
+    router("/home");
 
-                router("/home");
-
-                return request.data.message;
-            }
-
-            return request.data;
-
+    return request.data.message;
+}
         } catch (err) {
 
             console.error(
