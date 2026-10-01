@@ -1,7 +1,6 @@
 import React, {
     createContext,
     useState,
-    useEffect,
 } from "react";
 
 import server from "../enverment";
@@ -18,40 +17,30 @@ const client = axios.create({
 export const AuthProvider = ({ children }) => {
 
     const [userData, setUserData] = useState(() => {
-
         try {
-
-            const savedUser =
-                localStorage.getItem("userData");
+            const savedUser = localStorage.getItem("userData");
 
             return savedUser
                 ? JSON.parse(savedUser)
                 : {};
 
         } catch (error) {
-
-            console.error(
-                "User data parse error:",
-                error
-            );
-
+            console.error("User data parse error:", error);
             return {};
         }
     });
 
     const router = useNavigate();
 
-
-    /* =========================================
-       REGISTER
-    ========================================= */
+    // =========================================
+    // REGISTER
+    // =========================================
 
     const handleRegister = async (
         name,
         username,
         password
     ) => {
-
         try {
 
             const request = await client.post(
@@ -63,31 +52,31 @@ export const AuthProvider = ({ children }) => {
                 }
             );
 
-            if (request.status === 200 || request.status === 201) {
-    const user =
-        request.data?.user ||
-        request.data?.data ||
-        {
-            name,
-            username,
-        };
+            if (
+                request.status === 200 ||
+                request.status === 201
+            ) {
 
-    setUserData(user);
+                console.log(
+                    "REGISTER RESPONSE:",
+                    request.data
+                );
 
-    localStorage.setItem(
-        "userData",
-        JSON.stringify(user)
-    );
+                // IMPORTANT:
+                // Registration ke baad user ko login
+                // nahi maana jayega because backend
+                // token return nahi kar raha.
 
-    router("/home");
+                return request.data?.message || "User Registered";
+            }
 
-    return request.data.message;
-}
+            return request.data;
+
         } catch (err) {
 
             console.error(
                 "Register Error:",
-                err
+                err.response?.data || err.message
             );
 
             throw err;
@@ -95,51 +84,64 @@ export const AuthProvider = ({ children }) => {
     };
 
 
-    /* =========================================
-       LOGIN
-    ========================================= */
+    // =========================================
+    // LOGIN
+    // =========================================
 
-    const handleLogin = async (username, password) => {
-    try {
-        const request = await client.post("/login", {
-            username,
-            password,
-        });
+    const handleLogin = async (
+        username,
+        password
+    ) => {
 
-        if (request.status === httpStatus.OK) {
+        try {
 
-            console.log("LOGIN RESPONSE:", request.data);
+            const request = await client.post(
+                "/login",
+                {
+                    username,
+                    password,
+                }
+            );
+
+            console.log(
+                "LOGIN RESPONSE:",
+                request.data
+            );
+
+            if (request.status !== httpStatus.OK) {
+                throw new Error(
+                    request.data?.message ||
+                    "Login failed"
+                );
+            }
 
             const token = request.data?.token;
 
             if (!token) {
-                throw new Error("Token was not returned by server.");
+                throw new Error(
+                    "Token was not returned by server."
+                );
             }
 
-            // Save token
-            localStorage.setItem("token", token);
+            // Save authentication token
+            localStorage.setItem(
+                "token",
+                token
+            );
 
 
-            /*
-             =========================================
-             GET USER DATA
-             =========================================
-            */
+            // =========================================
+            // USER DATA
+            // =========================================
 
             let user =
                 request.data?.user ||
                 request.data?.data;
 
 
-            /*
-             =========================================
-             BACKEND DOES NOT SEND USER
-             =========================================
-            */
-
+            // Backend currently does not return user
             if (!user) {
 
-                // Check previously saved user
                 const savedUser =
                     localStorage.getItem("userData");
 
@@ -168,12 +170,7 @@ export const AuthProvider = ({ children }) => {
             }
 
 
-            /*
-             =========================================
-             FINAL FALLBACK
-             =========================================
-            */
-
+            // Final fallback
             if (!user) {
 
                 user = {
@@ -183,12 +180,7 @@ export const AuthProvider = ({ children }) => {
             }
 
 
-            /*
-             =========================================
-             SAVE USER
-             =========================================
-            */
-
+            // Save user
             setUserData(user);
 
             localStorage.setItem(
@@ -202,28 +194,32 @@ export const AuthProvider = ({ children }) => {
                 user
             );
 
+            console.log(
+                "TOKEN SAVED:",
+                localStorage.getItem("token")
+            );
 
+
+            // Go to home
             router("/home");
 
             return request.data;
+
+        } catch (err) {
+
+            console.error(
+                "Login Error:",
+                err.response?.data || err.message
+            );
+
+            throw err;
         }
+    };
 
-        return request.data;
 
-    } catch (err) {
-
-        console.error(
-            "Login Error:",
-            err
-        );
-
-        throw err;
-    }
-};
-
-    /* =========================================
-       GET USER HISTORY
-    ========================================= */
+    // =========================================
+    // GET USER HISTORY
+    // =========================================
 
     const getHistoryOfUser = async () => {
 
@@ -233,7 +229,6 @@ export const AuthProvider = ({ children }) => {
                 localStorage.getItem("token");
 
             if (!token) {
-
                 throw new Error(
                     "User is not authenticated. Token not found."
                 );
@@ -250,37 +245,20 @@ export const AuthProvider = ({ children }) => {
                     }
                 );
 
-
             console.log(
                 "Get History Response:",
                 response.data
             );
 
-
-            if (
-                Array.isArray(
-                    response.data
-                )
-            ) {
-
+            if (Array.isArray(response.data)) {
                 return response.data;
             }
 
-            if (
-                Array.isArray(
-                    response.data?.history
-                )
-            ) {
-
+            if (Array.isArray(response.data?.history)) {
                 return response.data.history;
             }
 
-            if (
-                Array.isArray(
-                    response.data?.data
-                )
-            ) {
-
+            if (Array.isArray(response.data?.data)) {
                 return response.data.data;
             }
 
@@ -299,9 +277,9 @@ export const AuthProvider = ({ children }) => {
     };
 
 
-    /* =========================================
-       ADD MEETING TO HISTORY
-    ========================================= */
+    // =========================================
+    // ADD MEETING TO HISTORY
+    // =========================================
 
     const addToUserHistory = async (
         meetingCode
@@ -313,22 +291,17 @@ export const AuthProvider = ({ children }) => {
                 localStorage.getItem("token");
 
             if (!token) {
-
                 throw new Error(
                     "User is not authenticated. Token not found."
                 );
             }
 
-
             const response =
                 await client.post(
                     "/add_to_activity",
-
                     {
-                        meeting_code:
-                            meetingCode,
+                        meeting_code: meetingCode,
                     },
-
                     {
                         headers: {
                             Authorization:
@@ -337,12 +310,10 @@ export const AuthProvider = ({ children }) => {
                     }
                 );
 
-
             console.log(
                 "Add History Response:",
                 response.data
             );
-
 
             return response.data;
 
@@ -359,17 +330,15 @@ export const AuthProvider = ({ children }) => {
     };
 
 
-    /* =========================================
-       LOGOUT
-    ========================================= */
+    // =========================================
+    // LOGOUT
+    // =========================================
 
     const logout = () => {
 
         localStorage.removeItem("token");
 
-        localStorage.removeItem(
-            "userData"
-        );
+        localStorage.removeItem("userData");
 
         setUserData({});
 
@@ -377,9 +346,9 @@ export const AuthProvider = ({ children }) => {
     };
 
 
-    /* =========================================
-       CONTEXT DATA
-    ========================================= */
+    // =========================================
+    // CONTEXT
+    // =========================================
 
     const data = {
 
