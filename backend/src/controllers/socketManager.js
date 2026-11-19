@@ -4,9 +4,9 @@ let connections = {};
 let timeOnline = {};
 let messages = {};
 
-const connectToSocket = (server) => {
+const connectToSocket = (server, options = {}) => {
     const io = new Server(server, {
-        cors: {
+        cors: options.cors || {
             origin: "*",
             methods: ["GET", "POST"],
             allowedHeaders: ["*"],
@@ -216,12 +216,7 @@ const connectToSocket = (server) => {
                     0
                 ) {
                     delete connections[room];
-
-                    // Optional:
-                    // room ke messages bhi remove
-                    // karne hain to uncomment:
-                    //
-                    // delete messages[room];
+                    delete messages[room];
                 }
 
                 break;

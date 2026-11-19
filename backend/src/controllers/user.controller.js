@@ -47,7 +47,11 @@ const login = async (req, res) => {
 
         return res.status(200).json({
             message: "Login successful",
-            token: token
+            token: token,
+            user: {
+                name: user.name,
+                username: user.username
+            }
         });
 
     } catch (e) {
@@ -65,7 +69,6 @@ const login = async (req, res) => {
 const register = async (req, res) => {
 
     const { name, username, password } = req.body;
-    console.log(req.body)
 
     if (!name || !username || !password) {
         return res.status(400).json({
@@ -107,31 +110,50 @@ const register = async (req, res) => {
     }
 };
 
-const getUserHistory = async (req,res) =>{
-    const {token} = req.query;
-    try{
-        const user = await User.findOne({token:token});
-        const meetings = await Meeting.find({user_id: user.username})
-        res.json(meetings)
-    }catch(e){
-        res.json({message:`Something went  wrong${e}`})
-    }
-} 
+const getUserHistory = async (req, res) => {
+    try {
+        const meetings = await Meeting.find({
+            user_id: req.user.username
+        }).sort({ date: -1 });
 
-const addToHistory = async (req,res)=>{
-    const {token ,meeting_code} = req.body;
-    try{
-        const user = await User.findOne({token:token});
-        const newMeeting  = new Meeting({
-            user_id : user.username,
-            meetingCode:meeting_code
-        })
-        await newMeeting.save();
-        res.status(201).json({message:"Added code to history"})
-    }catch(e){
-        res.json({message:`Something went wrong ${e}`})
+        return res.status(200).json(meetings);
+    } catch (error) {
+        console.error("GET HISTORY ERROR:", error);
+
+        return res.status(500).json({
+            message: "Unable to load meeting history"
+        });
     }
-}
+};
+
+const addToHistory = async (req, res) => {
+    const meetingCode = req.body?.meeting_code;
+
+    if (typeof meetingCode !== "string" || !meetingCode.trim()) {
+        return res.status(400).json({
+            message: "Please provide a meeting code"
+        });
+    }
+
+    try {
+        const newMeeting = new Meeting({
+            user_id: req.user.username,
+            meetingCode: meetingCode.trim()
+        });
+
+        await newMeeting.save();
+
+        return res.status(201).json({
+            message: "Added code to history"
+        });
+    } catch (error) {
+        console.error("ADD HISTORY ERROR:", error);
+
+        return res.status(500).json({
+            message: "Unable to save meeting history"
+        });
+    }
+};
 
 module.exports = {
     login,

@@ -41,8 +41,10 @@ export default function VideoMeet() {
 
     const localVideoRef = useRef(null);
     const localStreamRef = useRef(null);
+    const screenStreamRef = useRef(null);
 
     const connectionsRef = useRef({});
+    const pendingIceCandidatesRef = useRef({});
 
     // =========================================
     // STATES
@@ -79,8 +81,9 @@ export default function VideoMeet() {
 
     useEffect(() => {
         if (
+            window.isSecureContext &&
             navigator.mediaDevices &&
-            navigator.mediaDevices.getDisplayMedia
+            typeof navigator.mediaDevices.getDisplayMedia === "function"
         ) {
             setScreenAvailable(true);
         }
@@ -91,42 +94,61 @@ export default function VideoMeet() {
     // =========================================
 
     const getMedia = async () => {
-        try {
-            const stream =
-                await navigator.mediaDevices.getUserMedia({
-                    video: true,
-                    audio: true,
-                });
+        const stream = new MediaStream();
+        const getUserMedia = navigator.mediaDevices?.getUserMedia;
 
-            localStreamRef.current = stream;
-
-            setVideo(true);
-            setAudio(true);
-
-            if (localVideoRef.current) {
-                localVideoRef.current.srcObject = stream;
-            }
-
-            console.log(
-                "Camera and microphone started"
-            );
-
-            return stream;
-        } catch (error) {
-            console.error(
-                "Camera/Microphone error:",
-                error
-            );
-
+        if (!getUserMedia) {
+            console.error("Camera and microphone are unavailable in this browser.");
             setVideoAvailable(false);
             setAudioAvailable(false);
+        } else {
+            const mediaRequests = [
+                {
+                    kind: "video",
+                    constraints: { video: true, audio: false },
+                },
+                {
+                    kind: "audio",
+                    constraints: { video: false, audio: true },
+                },
+            ];
 
-            alert(
-                "Camera or microphone permission denied."
+            await Promise.all(
+                mediaRequests.map(async ({ kind, constraints }) => {
+                    try {
+                        const media = await getUserMedia.call(
+                            navigator.mediaDevices,
+                            constraints
+                        );
+
+                        media.getTracks().forEach((track) => {
+                            stream.addTrack(track);
+                        });
+                    } catch (error) {
+                        console.error(`${kind} access unavailable:`, error);
+                    }
+                })
             );
-
-            return null;
         }
+
+        const hasVideo = stream.getVideoTracks().length > 0;
+        const hasAudio = stream.getAudioTracks().length > 0;
+
+        localStreamRef.current = stream;
+        setVideoAvailable(hasVideo);
+        setAudioAvailable(hasAudio);
+        setVideo(hasVideo);
+        setAudio(hasAudio);
+
+        if (localVideoRef.current) {
+            localVideoRef.current.srcObject = stream;
+        }
+
+        if (!hasVideo && !hasAudio) {
+            alert("Camera and microphone are unavailable. You can still join without them.");
+        }
+
+        return stream;
     };
 
     // =========================================
@@ -189,6 +211,18 @@ export default function VideoMeet() {
                     )
                 );
 
+                const pendingCandidates =
+                    pendingIceCandidatesRef.current[fromId] || [];
+                delete pendingIceCandidatesRef.current[fromId];
+
+                for (const candidate of pendingCandidates) {
+                    try {
+                        await peer.addIceCandidate(candidate);
+                    } catch (error) {
+                        console.error("ICE candidate error:", error);
+                    }
+                }
+
                 if (
                     signal.sdp.type === "offer"
                 ) {
@@ -220,21 +254,20 @@ export default function VideoMeet() {
             // =================================
 
             if (signal.ice) {
-                try {
-                    await peer.addIceCandidate(
-                        new RTCIceCandidate(
-                            signal.ice
-                        )
-                    );
-                } catch (error) {
-                    console.log(
-                        "ICE candidate error:",
-                        error
-                    );
+                const candidate = new RTCIceCandidate(signal.ice);
+
+                if (!peer.remoteDescription) {
+                    if (!pendingIceCandidatesRef.current[fromId]) {
+                        pendingIceCandidatesRef.current[fromId] = [];
+                    }
+
+                    pendingIceCandidatesRef.current[fromId].push(candidate);
+                } else {
+                    await peer.addIceCandidate(candidate);
                 }
             }
         } catch (error) {
-            console.log(
+            console.error(
                 "Signal handling error:",
                 error
             );
@@ -679,6 +712,8 @@ export default function VideoMeet() {
                         .current[id];
                 }
 
+                delete pendingIceCandidatesRef.current[id];
+
                 setVideos(
                     (oldVideos) =>
                         oldVideos.filter(
@@ -797,15 +832,17 @@ export default function VideoMeet() {
                 await navigator.mediaDevices
                     .getDisplayMedia({
                         video: true,
-                        audio: true,
                     });
 
             const screenTrack =
                 screenStream.getVideoTracks()[0];
 
             if (!screenTrack) {
+                screenStream.getTracks().forEach((track) => track.stop());
                 return;
             }
+
+            screenStreamRef.current = screenStream;
 
             Object.values(
                 connectionsRef.current
@@ -821,9 +858,9 @@ export default function VideoMeet() {
                         );
 
                 if (sender) {
-                    sender.replaceTrack(
-                        screenTrack
-                    );
+                    sender.replaceTrack(screenTrack).catch((error) => {
+                        console.error("Screen share track replacement failed:", error);
+                    });
                 }
             });
 
@@ -846,6 +883,7 @@ export default function VideoMeet() {
                 "Screen share error:",
                 error
             );
+            alert("Could not start screen sharing. Check browser support and screen-capture permission.");
         }
     };
 
@@ -854,17 +892,12 @@ export default function VideoMeet() {
     // =========================================
 
     const stopScreenShare = (
-        screenStream = null
+        screenStream = screenStreamRef.current
     ) => {
         const cameraStream =
             localStreamRef.current;
 
-        if (!cameraStream) {
-            return;
-        }
-
-        const cameraTrack =
-            cameraStream.getVideoTracks()[0];
+        const cameraTrack = cameraStream?.getVideoTracks()[0];
 
         Object.values(
             connectionsRef.current
@@ -883,23 +916,26 @@ export default function VideoMeet() {
                 sender &&
                 cameraTrack
             ) {
-                sender.replaceTrack(
-                    cameraTrack
-                );
+                sender.replaceTrack(cameraTrack).catch((error) => {
+                    console.error("Camera track restore failed:", error);
+                });
             }
         });
 
         if (screenStream) {
             screenStream
                 .getTracks()
-                .forEach((track) =>
-                    track.stop()
-                );
+                .forEach((track) => {
+                    track.onended = null;
+                    track.stop();
+                });
         }
 
-        if (
-            localVideoRef.current
-        ) {
+        if (screenStreamRef.current === screenStream) {
+            screenStreamRef.current = null;
+        }
+
+        if (localVideoRef.current && cameraStream) {
             localVideoRef.current.srcObject =
                 cameraStream;
         }
@@ -912,6 +948,18 @@ export default function VideoMeet() {
     // =========================================
 
     const toggleScreenShare = () => {
+        if (
+            !window.isSecureContext ||
+            typeof navigator.mediaDevices?.getDisplayMedia !== "function"
+        ) {
+            alert(
+                window.isSecureContext
+                    ? "This browser does not support screen sharing. Try an up-to-date browser that supports screen capture."
+                    : "Screen sharing requires a secure connection (HTTPS or localhost)."
+            );
+            return;
+        }
+
         if (screen) {
             stopScreenShare();
         } else {
@@ -940,6 +988,7 @@ export default function VideoMeet() {
         });
 
         connectionsRef.current = {};
+        pendingIceCandidatesRef.current = {};
 
         if (localStreamRef.current) {
             localStreamRef.current
@@ -949,6 +998,14 @@ export default function VideoMeet() {
                 );
 
             localStreamRef.current = null;
+        }
+
+        if (screenStreamRef.current) {
+            screenStreamRef.current.getTracks().forEach((track) => {
+                track.onended = null;
+                track.stop();
+            });
+            screenStreamRef.current = null;
         }
 
         setVideos([]);
@@ -979,6 +1036,7 @@ export default function VideoMeet() {
             });
 
             connectionsRef.current = {};
+            pendingIceCandidatesRef.current = {};
 
             if (localStreamRef.current) {
                 localStreamRef.current
@@ -989,6 +1047,17 @@ export default function VideoMeet() {
 
                 localStreamRef.current =
                     null;
+            }
+
+            if (screenStreamRef.current) {
+                screenStreamRef.current
+                    .getTracks()
+                    .forEach((track) => {
+                        track.onended = null;
+                        track.stop();
+                    });
+
+                screenStreamRef.current = null;
             }
         };
     }, []);
@@ -1336,24 +1405,18 @@ export default function VideoMeet() {
 
                                 {/* SCREEN */}
 
-                                {screenAvailable && (
-
-                                    <button
-                                        className="controlButton"
-                                        onClick={
-                                            toggleScreenShare
-                                        }
-                                    >
-
-                                        {screen ? (
-                                            <StopScreenShareIcon />
-                                        ) : (
-                                            <ScreenShareIcon />
-                                        )}
-
-                                    </button>
-
-                                )}
+                                <button
+                                    className={`controlButton ${screenAvailable ? "" : "controlButtonUnavailable"}`}
+                                    onClick={toggleScreenShare}
+                                    title={screenAvailable ? "Share screen" : "Screen sharing may not be supported by this browser"}
+                                    aria-label={screen ? "Stop screen sharing" : "Share screen"}
+                                >
+                                    {screen ? (
+                                        <StopScreenShareIcon />
+                                    ) : (
+                                        <ScreenShareIcon />
+                                    )}
+                                </button>
 
                                 {/* CHAT */}
 

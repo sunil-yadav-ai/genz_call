@@ -291,9 +291,7 @@ export const AuthProvider = ({ children }) => {
                 localStorage.getItem("token");
 
             if (!token) {
-                throw new Error(
-                    "User is not authenticated. Token not found."
-                );
+                return null;
             }
 
             const response =

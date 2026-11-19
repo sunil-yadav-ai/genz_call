@@ -1,80 +1,3 @@
-// import React, { useContext, useState } from "react";
-// import { useNavigate } from "react-router-dom";
-// import "../App.css";
-
-
-// import Button from "@mui/material/Button";
-// import IconButton from "@mui/material/IconButton";
-// import RestoreIcon from "@mui/icons-material/Restore";
-// import { AuthContext } from "../controls/authContext";
-
-// export default function HomeComponent() {
-//     const navigate = useNavigate();
-
-//     const [meetingCode, setMeetingCode] = useState("");
-//     const {addToUserHistory} = useContext(AuthContext);
-
-//     const handleJoinVideoCall = async () => {
-//         if (!meetingCode.trim()) {
-//             alert("Please enter a meeting code");
-//             return;
-//         }
-//         await addToUserHistory(meetingCode)
-//         navigate(`/${meetingCode.trim()}`);
-//     };
-
-//     return (
-//         <div className="navBar">
-
-//             {/* Logo / Name */}
-//             <div style={{ display: "flex", alignItems: "center" }}>
-//                 <h3>Genz Video Call</h3>
-//             </div>
-
-//             {/* Join Meeting */}
-//             <div
-//                 style={{
-//                     display: "flex",
-//                     alignItems: "center",
-//                     gap: "10px"
-//                 }}
-//             >
-//                 <input
-//                     type="text"
-//                     placeholder="Enter meeting code"
-//                     value={meetingCode}
-//                     onChange={(e) => setMeetingCode(e.target.value)}
-//                 />
-
-//                 <button onClick={handleJoinVideoCall}>
-//                     Join
-//                 </button>
-
-//                 <IconButton onClick={
-//                     ()=>{
-//                         navigate("/history")
-//                     }
-//                 }>
-//                     <RestoreIcon />
-//                     <p>History</p>
-                    
-//                 </IconButton>
-                
-//                 <Button onClick={()=>{
-//                     localStorage.removeItem("token")
-//                     navigate("/auth")
-//                 }}>
-//                     Logout
-//                 </Button>
-//             </div>
-            
-//             <div className="rightPanel">
-//                 <img src="/call.svg" alt="" />
-//             </div>
-
-//         </div>
-//     );
-// }
 
 import React, { useContext, useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -114,14 +37,14 @@ export default function Home() {
 
     const [meetingCode, setMeetingCode] = useState("");
 
-    const { addToUserHistory,userData } = useContext(AuthContext);
+    const { addToUserHistory, logout, userData } = useContext(AuthContext);
 
 
     /* =========================================
        JOIN VIDEO CALL
     ========================================= */
 
-    const handleJoinVideoCall = async () => {
+    const handleJoinVideoCall = () => {
 
         const code = meetingCode.trim();
 
@@ -130,19 +53,15 @@ export default function Home() {
             return;
         }
 
-        try {
+        navigate(`/${code}`);
 
-            await addToUserHistory(code);
-
-            navigate(`/${code}`);
-
-        } catch (error) {
-
-            console.error(
-                "Failed to add meeting to history:",
-                error
-            );
-
+        if (localStorage.getItem("token")) {
+            addToUserHistory(code).catch((error) => {
+                console.error(
+                    "Failed to add meeting to history:",
+                    error
+                );
+            });
         }
     };
 
@@ -152,10 +71,7 @@ export default function Home() {
     ========================================= */
 
     const handleLogout = () => {
-
-        localStorage.removeItem("token");
-
-        navigate("/auth");
+        logout();
     };
 
 
@@ -522,7 +438,7 @@ export default function Home() {
                         </ListItemIcon>
 
                         <ListItemText
-                            primary="Logout"
+                            primary={localStorage.getItem("token") ? "Logout" : "Login"}
                             primaryTypographyProps={{
                                 fontWeight: 550,
                                 fontSize: "0.9rem",
@@ -715,7 +631,7 @@ export default function Home() {
                                     fontWeight: 700,
                                 }}
                             >
-                               {userData?.name || userData?.username || "User"}
+                               {userData?.name || userData?.username || "Guest"}
                             </Typography>
 
                             <Typography
@@ -727,7 +643,7 @@ export default function Home() {
                                         "0.12em",
                                 }}
                             >
-                                PRO TIER
+                                {localStorage.getItem("token") ? "PRO TIER" : "GUEST"}
                             </Typography>
 
                         </Box>
@@ -752,7 +668,7 @@ export default function Home() {
                         >
                            {(userData?.name ||
         userData?.username ||
-        "U")
+        "G")
         .charAt(0)
         .toUpperCase()}
                         </Avatar>
@@ -1048,11 +964,10 @@ export default function Home() {
                     <Box
                         sx={{
                             position: "relative",
-
-                            display: {
-                                xs: "none",
-                                lg: "block",
-                            },
+                            display: "block",
+                            width: "100%",
+                            maxWidth: 620,
+                            mx: "auto",
                         }}
                     >
 
@@ -1169,38 +1084,66 @@ export default function Home() {
                             />
 
 
-                            {/* Camera Icon */}
-
-                            <Avatar
+                            <Box
+                                component="svg"
+                                viewBox="0 0 520 360"
+                                role="img"
+                                aria-label="GenZ Call video meeting illustration"
                                 sx={{
-                                    width: 120,
-                                    height: 120,
-
+                                    width: "94%",
+                                    maxWidth: 520,
+                                    height: "auto",
                                     position: "relative",
-
-                                    bgcolor:
-                                        "rgba(139,92,246,0.12)",
-
-                                    border:
-                                        "2px solid rgba(192,132,252,0.35)",
-
-                                    boxShadow:
-                                        "0 0 50px rgba(139,92,246,0.18)",
+                                    zIndex: 1,
+                                    filter: "drop-shadow(0 18px 35px rgba(0,0,0,0.35))",
                                 }}
                             >
+                                <defs>
+                                    <linearGradient id="call-panel" x1="0" y1="0" x2="1" y2="1">
+                                        <stop offset="0%" stopColor="#30204e" />
+                                        <stop offset="100%" stopColor="#11141f" />
+                                    </linearGradient>
+                                    <linearGradient id="call-person-one" x1="0" y1="0" x2="1" y2="1">
+                                        <stop offset="0%" stopColor="#c084fc" />
+                                        <stop offset="100%" stopColor="#6d28d9" />
+                                    </linearGradient>
+                                    <linearGradient id="call-person-two" x1="0" y1="0" x2="1" y2="1">
+                                        <stop offset="0%" stopColor="#f0abfc" />
+                                        <stop offset="100%" stopColor="#9333ea" />
+                                    </linearGradient>
+                                </defs>
 
-                                <Videocam
-                                    sx={{
-                                        fontSize: 58,
+                                <rect x="34" y="24" width="452" height="304" rx="28" fill="url(#call-panel)" stroke="rgba(216,180,254,0.3)" />
+                                <rect x="49" y="39" width="294" height="224" rx="20" fill="#171522" />
+                                <rect x="354" y="39" width="117" height="224" rx="20" fill="#211832" />
 
-                                        color: "#a855f7",
+                                <circle cx="196" cy="127" r="52" fill="url(#call-person-one)" opacity="0.9" />
+                                <path d="M111 250c8-48 38-73 85-73s77 25 85 73" fill="url(#call-person-one)" />
+                                <path d="M153 115c6-34 74-44 91 0-19-9-27-20-32-31-12 17-31 27-59 31Z" fill="#21152f" />
+                                <circle cx="178" cy="130" r="3" fill="#23152f" />
+                                <circle cx="213" cy="130" r="3" fill="#23152f" />
+                                <path d="M183 150c8 7 18 7 26 0" fill="none" stroke="#54276d" strokeWidth="3" strokeLinecap="round" />
 
-                                        filter:
-                                            "drop-shadow(0 0 12px rgba(168,85,247,0.5))",
-                                    }}
-                                />
+                                <circle cx="412" cy="111" r="31" fill="url(#call-person-two)" />
+                                <path d="M369 210c4-29 19-45 43-45s39 16 43 45" fill="url(#call-person-two)" />
+                                <path d="M385 105c4-22 48-27 56 0-12-5-19-13-22-20-8 11-19 18-34 20Z" fill="#321943" />
 
-                            </Avatar>
+                                <rect x="173" y="277" width="174" height="34" rx="17" fill="#090b10" stroke="rgba(255,255,255,0.12)" />
+                                <circle cx="201" cy="294" r="10" fill="#262333" />
+                                <path d="M197 291h8v6h-8zM196 289l5-3 5 3" fill="none" stroke="#e9d5ff" strokeWidth="1.5" strokeLinejoin="round" />
+                                <circle cx="232" cy="294" r="10" fill="#262333" />
+                                <path d="M229 290v8l7-4-7-4Z" fill="#e9d5ff" />
+                                <circle cx="263" cy="294" r="10" fill="#7f1d1d" />
+                                <path d="m259 290 8 8m0-8-8 8" stroke="#fecaca" strokeWidth="1.5" strokeLinecap="round" />
+                                <circle cx="319" cy="294" r="10" fill="#262333" />
+                                <circle cx="316" cy="294" r="1.3" fill="#e9d5ff" />
+                                <circle cx="319" cy="294" r="1.3" fill="#e9d5ff" />
+                                <circle cx="322" cy="294" r="1.3" fill="#e9d5ff" />
+
+                                <rect x="370" y="51" width="66" height="22" rx="11" fill="rgba(9,11,16,0.72)" />
+                                <circle cx="382" cy="62" r="4" fill="#4ade80" />
+                                <text x="392" y="66" fill="#f5f3ff" fontSize="9" fontFamily="Arial, sans-serif">LIVE</text>
+                            </Box>
 
 
                             {/* Floating Meeting Card */}

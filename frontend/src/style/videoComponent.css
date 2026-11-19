@@ -1037,6 +1037,11 @@ body {
     transform: translateY(-1px);
 }
 
+.controlButtonUnavailable {
+    color: #777987;
+    border-style: dashed;
+}
+
 .controlButton svg {
     font-size: 17px;
 }

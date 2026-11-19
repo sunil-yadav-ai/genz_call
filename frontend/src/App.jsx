@@ -23,10 +23,10 @@ function App() {
 
         
 
-          <Route path='/:url' element={<ProtectedRoute> <VideoMeet/> </ProtectedRoute>}/>
+          <Route path='/:url' element={<VideoMeet/>}/>
         
 
-        <Route path='/home' element={<ProtectedRoute> <HomeComponent/></ProtectedRoute>}/>
+        <Route path='/home' element={ <HomeComponent/>}/>
       
 
       </Routes>
